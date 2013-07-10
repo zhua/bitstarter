@@ -2,11 +2,9 @@ var express = require('express');
 
 var app = express.createServer(express.logger());
 
+var fs = require('fs');
 //var buf = new Buffer(256);
 var buf = fs.readFileSync('index.html');
-
-//console.log(text);
-//console.log(len);
 
 app.get('/', function(request, response) {
   response.send('Hello World 2!');
