@@ -2,9 +2,8 @@ var express = require('express');
 
 var app = express.createServer(express.logger());
 
-var buf = new Buffer(256);
-//var text = fs.readFileSync('index.html');
-//var len = buf.write(text, 0);
+//var buf = new Buffer(256);
+var buf = fs.readFileSync('index.html');
 
 //console.log(text);
 //console.log(len);
