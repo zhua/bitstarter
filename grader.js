@@ -24,8 +24,13 @@ References:
 var fs = require('fs');
 var program = require('commander');
 var cheerio = require('cheerio');
+var rest    = require('restler');
+var util    = require('util');
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
+var URL_DEFAULT        = "http://whispering-tor-4836.herokuapp.com";
+url_flag  = 0;
+
 
 var assertFileExists = function(infile) {
     var instr = infile.toString();
@@ -35,6 +40,18 @@ var assertFileExists = function(infile) {
     }
     return instr;
 };
+
+var assertURLOk = function(inUrl){
+  rest.get(inUrl.toString()).on('complete', function(result) {
+    if(result instanceof Error) {
+      console.log("%s does not exist. Exiting.", inUrl);
+      process.exit(1);
+    }
+    else {
+    //  console.log("%s exists.", inUrl);
+    }
+  });
+}
 
 var cheerioHtmlFile = function(htmlfile) {
     return cheerio.load(fs.readFileSync(htmlfile));
@@ -52,23 +69,64 @@ var checkHtmlFile = function(htmlfile, checksfile) {
         var present = $(checks[ii]).length > 0;
         out[checks[ii]] = present;
     }
+    console.log("Checking file: %s", htmlfile);
     return out;
 };
+
+var checkUrl = function(url, checksfile) {
+  var out = {};
+  var checks = {};
+
+
+    //var testfun = buildfn( );
+    //rest.get(process.argv[5]).on('complete', testfun);
+    rest.get(process.argv[5]).on('complete', function(result) {
+
+      $ = cheerio.load(result);
+      checks = loadChecks(checksfile);
+      for(var ii in checks) {
+          var present = $(checks[ii]).length > 0;
+          out[checks[ii]] = present;
+      }
+      if (url_flag == 0) {   
+        var outJson = JSON.stringify(checkJson, null, 4);
+        console.log(outJson);
+        url_flag = 1;
+      }
+      
+      return out;
+    });
+
+  return out;
+}
 
 var clone = function(fn) {
     // Workaround for commander.js issue.
     // http://stackoverflow.com/a/6772648
     return fn.bind({});
 };
-
+ 
 if(require.main == module) {
     program
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+        .option('-u, --url <url_name>', 'URL string', clone(assertURLOk), URL_DEFAULT)
         .parse(process.argv);
-    var checkJson = checkHtmlFile(program.file, program.checks);
-    var outJson = JSON.stringify(checkJson, null, 4);
-    console.log(outJson);
+
+    var checkJson = {};
+
+    if ( (process.argv[4]=="-f") | (process.argv[4]=="--file") ) {
+      console.log("check file");
+      checkJson = checkHtmlFile(program.file, program.checks);
+
+      var outJson = JSON.stringify(checkJson, null, 4);
+      console.log(outJson);
+
+    } else {
+    
+      checkJson = checkUrl(program.url, program.checks);
+    }
+ 
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
